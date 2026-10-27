@@ -10,6 +10,7 @@ export class Player extends Container {
     this.x = options.x;
     this.y = options.y;
     this.speed = options.speed ?? 5;
+    this.hp = 3;
     this.maxHp = this.hp;
 
     const sprite = new Sprite(texture);

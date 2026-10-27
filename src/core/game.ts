@@ -5,6 +5,7 @@ import { Asteroid } from "../entities/asteroid";
 import { CollisionSystem } from "../entities/collisionSystem";
 import { KeyboardManager } from "./keyboard";
 import { UIManager } from "./text";
+import { BossFight } from "../entities/bossFight";
 
 export class Game {
   private app: Application;
@@ -13,12 +14,13 @@ export class Game {
   private uiManager!: UIManager;
   private bullets: Bullet[] = [];
   private asteroids: Asteroid[] = [];
-
+  private level: number = 1;
   private ammo: number = 10;
   private lastShootTime: number = 0;
   private shootCooldown: number = 250;
   private timeLeft: number = 60;
   private isGameOver: boolean = false;
+  private bossFight?: BossFight;
 
   constructor(app: Application) {
     this.app = app;
@@ -42,6 +44,7 @@ export class Game {
       "assets/ship.png",
       "assets/space.png",
       "assets/asteroid.png",
+      "assets/boss.png"
     ]);
   }
 
@@ -59,7 +62,7 @@ export class Game {
   }
 
   private createAsteroids(): void {
-    const texture = Assets.get("assets/asteroid.png")
+    const texture = Assets.get("assets/asteroid.png");
     const asteroidCount = 8;
     const positions = this.generateAsteroidPositions(asteroidCount, 75);
 
@@ -83,10 +86,16 @@ export class Game {
     this.updateBullets(delta);
     this.checkCollisions();
 
+    if (this.bossFight) {
+      this.bossFight.update(delta, deltaMS);
+      const result = this.bossFight.collide(this.bullets, this.player);
+      if (result === "win") this.endGame(true);
+      if (result === "lose") this.endGame(false);
+    }
+
     this.updateTimer(deltaMS);
     this.checkGameState();
   }
-
   private handleShooting(): void {
     const now = Date.now();
     if (
@@ -99,8 +108,8 @@ export class Game {
       this.lastShootTime = now;
 
       const bullet = new Bullet({
-        x: this.player.x,
-        y: this.player.y - this.player.height / 2,
+        x: this.player.x + this.player.width / 2,
+        y: this.player.y,
         speed: 12,
       });
 
@@ -181,20 +190,34 @@ export class Game {
     this.uiManager.updateTimer(this.timeLeft);
   }
   private checkGameState(): void {
-    if (this.asteroids.length === 0) {
-      this.endGame(true);
+    if (this.asteroids.length === 0 && this.level === 1) {
+      this.startLevelTwo();
       return;
     }
     if (
       this.ammo === 0 &&
       this.bullets.length === 0 &&
-      this.asteroids.length > 0
+      (this.level === 1 ? this.asteroids.length > 0 : (this.bossFight?.hp ?? 0) > 0)
     ) {
       this.endGame(false);
       return;
     }
   }
+  private startLevelTwo() {
+    this.level = 2;
+    this.ammo = 10;
+    this.timeLeft = 60;
+
+    this.uiManager.updateAmmo(this.ammo);
+    this.uiManager.updateTimer(this.timeLeft);
+
+    this.bossFight = new BossFight(
+      this.app.stage,
+      Assets.get("assets/boss.png")
+    );
+  }
   private endGame(isWin: boolean) {
+    if (this.isGameOver) return;
     this.isGameOver = true;
     this.uiManager.showResult(isWin);
   }
