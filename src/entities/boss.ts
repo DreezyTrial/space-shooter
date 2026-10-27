@@ -8,6 +8,8 @@ export class Boss extends Container {
   private speed: number = 3;
   private direction: number = 1;
   private shootTimer: number = 1;
+  private moveTimer: number = 0;
+  private isMoving: boolean = true;
 
   public onShoot?: (x: number, y: number) => void;
 
@@ -40,14 +42,22 @@ export class Boss extends Container {
     this.healthBar.rect(-50, -50, width, 8).fill(0x00ff00);
   }
   public update(delta: number, deltaMS: number) {
-    this.x += this.speed * this.direction * delta;
+    this.moveTimer += deltaMS;
+    if (this.moveTimer >= 2000) {
+      this.moveTimer = 0;
+      this.isMoving = !this.isMoving;
+    }
 
-    if (this.x >= 1180) {
-      this.x = 1180;
-      this.direction = -1;
-    } else if (this.x <= 100) {
-      this.x = 100;
-      this.direction = 1;
+    if (this.isMoving) {
+      this.x += this.speed * this.direction * delta;
+
+      if (this.x >= 1180) {
+        this.x = 1180;
+        this.direction = -1;
+      } else if (this.x <= 100) {
+        this.x = 100;
+        this.direction = 1;
+      }
     }
     this.shootTimer += deltaMS;
     if (this.shootTimer >= 2000) {

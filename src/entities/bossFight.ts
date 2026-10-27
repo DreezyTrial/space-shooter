@@ -73,8 +73,7 @@ export class BossFight {
       this.stage.removeChild(bossBullet);
       bossBullet.destroy();
       this.bullets.splice(i, 1);
-      player.hp -= 1;
-      if (player.hp <= 0) return "lose";
+      return "lose";
     }
 
     return null;
